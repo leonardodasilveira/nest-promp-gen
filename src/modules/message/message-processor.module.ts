@@ -5,11 +5,11 @@ import {ToolsModule} from "@src/modules/tools/tools.module";
 import {MessageProcessorFactory} from "@src/modules/message/factories/message-processor.factory";
 import {ConversationManagerFactory} from "@src/modules/conversation-manager/factories/conversation-manager.factory";
 import {ToolDefinitionService} from "@src/modules/tools/tool-definition.service";
-import {ChatModule} from "@src/modules/conversation-manager/conversation-manager.module";
+import {ConversationManagerModule} from "@src/modules/conversation-manager/conversation-manager.module";
 
 @Module({
-    imports: [ChatModule, ToolsModule],
-    providers: [MessageProcessorFactory, ToolRunnerService],
+    imports: [ToolsModule, ConversationManagerModule],
+    providers: [MessageProcessorFactory, ToolRunnerService, ToolDefinitionService],
     exports: [MessageProcessorFactory]
 })
 

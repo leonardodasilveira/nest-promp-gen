@@ -1,35 +1,37 @@
-import {ConversationManager} from "@src/modules/conversation-manager/conversation-manager.service";
 import {Injectable} from "@nestjs/common";
+import {ConversationManagerFactory} from "@src/modules/conversation-manager/factories/conversation-manager.factory";
 
-type ToolHandler = (args: any) => Promise<{ status: string }>;
+type ToolHandler = (args: any, sessionId: string) => Promise<{ status: string, agentHasChanged: boolean }>;
 
 @Injectable()
 export class ToolRunnerService {
     private readonly handlers: Record<string, ToolHandler>;
 
-    constructor(private readonly conversationManager: ConversationManager) {
+    constructor(private readonly conversationManagerFactory: ConversationManagerFactory) {
         this.handlers = {
             edit_markdown_file: this.handleEditMarkdownFile,
             select_macro_prompt_category: this.handleSelectMacroPromptCategory,
         };
     }
 
-    async runTool(name: string, args: any): Promise<{ status: string }> {
+    async runTool(name: string, args: any, sessionId: string): Promise<{ status: string, agentHasChanged: boolean }> {
         const handler = this.handlers[name];
         if (!handler) {
             throw new Error(`Tool "${name}" not implemented.`);
         }
-        return handler(args);
+        return handler(args, sessionId);
     }
 
-    private handleEditMarkdownFile: ToolHandler = async (args: { content: string }) => {
-        await this.conversationManager.saveGeneratedPrompt(args.content);
-        await this.conversationManager.saveFinalPrompt();
-        return { status: 'Arquivo salvo com sucesso' };
+    private handleEditMarkdownFile: ToolHandler = async (args: { content: string }, sessionId: string) => {
+        const conversationManager = await this.conversationManagerFactory.create(sessionId)
+        await conversationManager.saveGeneratedPrompt(args.content);
+        await conversationManager.saveFinalPrompt();
+        return {status: 'Arquivo salvo com sucesso', agentHasChanged: false};
     }
 
-    private handleSelectMacroPromptCategory: ToolHandler = async (args: { fileName: string }) => {
-        await this.conversationManager.updateAgent(args.fileName);
-        return { status: 'Categoria selecionada e pronta para ser utilizada' };
+    private handleSelectMacroPromptCategory: ToolHandler = async (args: { fileName: string }, sessionId: string) => {
+        const conversationManager = await this.conversationManagerFactory.create(sessionId)
+        await conversationManager.updateAgent(args.fileName);
+        return {status: 'Categoria selecionada e pronta para ser utilizada', agentHasChanged: true};
     }
 }

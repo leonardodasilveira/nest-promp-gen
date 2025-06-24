@@ -1,9 +1,10 @@
 import {Injectable} from '@nestjs/common';
 import {IConversationStore} from "@src/modules/conversation-manager/interfaces/conversation-store.interface";
 import {promises as fs} from "fs";
-import path from "path"
-import {BASE_AGENT} from "@src/shared/constants/paths";
+import * as path from 'path';
+import {BASE_AGENT, CONVERSATIONS_FOLDER} from "@src/shared/constants/paths";
 import {PromptContextBuilderService} from "@src/modules/prompt/prompt-context-builder.service";
+import {ChatCompletionMessageParam} from "openai/resources/chat/completions";
 
 @Injectable()
 export class ConversationManager {
@@ -12,10 +13,15 @@ export class ConversationManager {
     private readonly promptContextBuilder: PromptContextBuilderService
     private agent: string
 
-    constructor(sessionId: string, store: IConversationStore) {
+    constructor(
+        sessionId: string,
+        store: IConversationStore,
+        promptContextBuilder: PromptContextBuilderService
+    ) {
         this.sessionId = sessionId
         this.store = store
-        this.agent = 'default'
+        this.promptContextBuilder = promptContextBuilder
+        this.agent = BASE_AGENT
     }
 
 
@@ -23,7 +29,7 @@ export class ConversationManager {
         const loaded = await this.store.load();
         if (!loaded || loaded.length === 0) {
             const systemPrompt = await this.promptContextBuilder.getPromptByAgent(this.sessionId, this.agent)
-            await this.store.save({[this.agent]: {messages: systemPrompt}});
+            await this.store.save({[this.agent]: {messages: [{role: "system", content: systemPrompt}]}});
         }
     }
 
@@ -39,13 +45,18 @@ export class ConversationManager {
         return await this.store.getMessages(this.agent)
     }
 
-    async appendMessage(message: string): Promise<void> {
+    async appendMessage(message: ChatCompletionMessageParam): Promise<void> {
         await this.store.appendMessage(message, this.agent);
+    }
+
+    async appendMultipleMessages(messages: ChatCompletionMessageParam[]): Promise<void> {
+        for (const msg of messages) {
+            await this.appendMessage(msg)
+        }
     }
 
     async updateAgent(newAgent: string): Promise<void> {
         this.agent = newAgent;
-        // Opcional: garantir que o novo agente tenha estrutura
         const msgs = await this.store.getMessages(newAgent);
         if (!msgs) {
             await this.store.save({ [newAgent]: { messages: [] } });
@@ -57,7 +68,7 @@ export class ConversationManager {
         const fileName = `${agent}.md`;
 
         const folderPath = path.resolve(
-            'src/conversations',
+            CONVERSATIONS_FOLDER,
             this.sessionId,
             'generated-prompts'
         );

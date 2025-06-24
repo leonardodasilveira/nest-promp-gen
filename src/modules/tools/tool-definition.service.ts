@@ -28,8 +28,9 @@ export class ToolDefinitionService {
                         type: 'object',
                         properties: {
                             fileName: { type: 'string' },
+                            name: {type: 'string'}
                         },
-                        required: ['fileName'],
+                        required: ['fileName', 'name'],
                     },
                 },
             },

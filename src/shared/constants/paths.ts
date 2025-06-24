@@ -1,6 +1,7 @@
-import path = require('path');
+import * as path from 'path';
 
-export const SRC_ROOT = path.resolve(__dirname, '../../../');
-export const PROMPT_DB_FOLDER = path.join(SRC_ROOT, 'prompt-db');
-export const CONVERSATIONS_FOLDER = path.join(SRC_ROOT, 'conversations');
-export const BASE_AGENT = "00_base_system_prompt";
+const ROOT = process.cwd(); // apps/prompt-generator
+
+export const PROMPT_DB_FOLDER = path.join(ROOT, 'src', 'prompt-db');
+export const CONVERSATIONS_FOLDER = path.join(ROOT, 'src', 'conversations');
+export const BASE_AGENT = '00_base_system_prompt';

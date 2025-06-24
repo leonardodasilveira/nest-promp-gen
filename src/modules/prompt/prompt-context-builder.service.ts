@@ -34,7 +34,7 @@ export class PromptContextBuilderService {
     }
 
     async getPromptByAgent(sessionId: string, agent: string): Promise<string> {
-        const basePath = path.join(PROMPT_DB_FOLDER, BASE_AGENT);
+        const basePath = path.join(PROMPT_DB_FOLDER, `${BASE_AGENT}.md`);
         let basePrompt = getMarkdownFileContent(basePath);
         basePrompt += await this.getPromptList();
 

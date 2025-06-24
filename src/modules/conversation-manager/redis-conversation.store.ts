@@ -1,6 +1,5 @@
 import Redis from 'ioredis'
-import { IConversationStore } from './interfaces/conversation-store.interface';
-
+import {IConversationStore} from './interfaces/conversation-store.interface';
 
 
 export class RedisConversationStore implements IConversationStore {
@@ -36,14 +35,34 @@ export class RedisConversationStore implements IConversationStore {
 
     async getMessages(agent: string = 'default'): Promise<any[]> {
         const raw = await this.redis.get(this.getRedisKey(agent));
-        const json = raw ? JSON.parse(raw) : {};
-        return json.messages ?? [];
+        if (!raw) return [];
+
+        try {
+            const json = JSON.parse(raw);
+            return Array.isArray(json?.messages) ? json.messages : [];
+        } catch (e) {
+            console.warn(`Failed to parse Redis data for ${agent}`, e);
+            return [];
+        }
     }
 
-    async appendMessage(message: any, agent: string = 'default'): Promise<void> {
+    async appendMessage(message: string, agent: string = 'default'): Promise<void> {
         const key = this.getRedisKey(agent);
         const raw = await this.redis.get(key);
-        const data = raw ? JSON.parse(raw) : { messages: [] };
+
+        let data: { messages: any[] };
+
+        try {
+            data = raw ? JSON.parse(raw) : { messages: [] };
+
+            if (!Array.isArray(data.messages)) {
+                data.messages = [];
+            }
+
+        } catch (e) {
+            data = { messages: [] };
+        }
+
         data.messages.push(message);
         await this.redis.set(key, JSON.stringify(data));
     }
